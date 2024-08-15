@@ -3,9 +3,6 @@ import './AppleCatcher.css';
 import goodAppleImg from './img/good-apple.png';
 import rottenAppleImg from './img/rotten-apple.png';
 import catcherImg from './img/catcher.png';
-import backgroundMusic from './audio/background-music.mp3';
-import buttonClickSound from './audio/button-click.mp3';
-import UniverseData from '../../UniverseData';
 
 const AppleCatcher = ({ onGameOver }) => {
     const [gameState, setGameState] = useState({
@@ -19,8 +16,6 @@ const AppleCatcher = ({ onGameOver }) => {
 
     const [scoreAnimations, setScoreAnimations] = useState([]);
 
-    const backgroundMusicRef = useRef(new Audio(backgroundMusic));
-    const buttonClickSoundRef = useRef(new Audio(buttonClickSound));
     const gameLoopRef = useRef(null);
     const lastUpdateTimeRef = useRef(0);
 
@@ -35,9 +30,9 @@ const AppleCatcher = ({ onGameOver }) => {
                 const appleBottom = apple.y + 5;
 
                 if (
-                    appleBottom >= catcherTop && 
-                    appleBottom <= catcherTop + 2 &&
-                    apple.x >= catcherLeft && 
+                    appleBottom >= catcherTop &&
+                    appleBottom <= catcherTop + 10 &&
+                    apple.x >= catcherLeft &&
                     apple.x <= catcherRight
                 ) {
                     const scoreChange = apple.type === 'good' ? 10 : -20;
@@ -70,7 +65,7 @@ const AppleCatcher = ({ onGameOver }) => {
     }, []);
 
     const gameLoop = useCallback((timestamp) => {
-        if (timestamp - lastUpdateTimeRef.current > 25) {
+        if (timestamp - lastUpdateTimeRef.current > 50) { // Увеличен интервал обновления
             lastUpdateTimeRef.current = timestamp;
             setGameState(prevState => {
                 if (!prevState.gameStarted) return prevState;
@@ -80,7 +75,7 @@ const AppleCatcher = ({ onGameOver }) => {
                     y: apple.y + 0.5,
                 }));
 
-                if (Math.random() < 0.02 && newApples.length < 5) {
+                if (Math.random() < 0.01 && newApples.length < 5) { // Уменьшена частота появления яблок
                     newApples.push({
                         id: Date.now(),
                         x: Math.random() * 100,
@@ -104,13 +99,6 @@ const AppleCatcher = ({ onGameOver }) => {
     }, [checkCollisions]);
 
     useEffect(() => {
-        backgroundMusicRef.current.loop = true;
-        return () => {
-            backgroundMusicRef.current.pause();
-        };
-    }, []);
-
-    useEffect(() => {
         if (gameState.gameStarted && gameState.time > 0) {
             const timer = setInterval(() => {
                 setGameState(prev => ({ ...prev, time: prev.time - 1 }));
@@ -124,13 +112,11 @@ const AppleCatcher = ({ onGameOver }) => {
 
     useEffect(() => {
         if (gameState.gameStarted) {
-            backgroundMusicRef.current.play();
             gameLoopRef.current = requestAnimationFrame(gameLoop);
         } else {
             if (gameLoopRef.current) {
                 cancelAnimationFrame(gameLoopRef.current);
             }
-            backgroundMusicRef.current.pause();
         }
 
         return () => {
@@ -140,13 +126,7 @@ const AppleCatcher = ({ onGameOver }) => {
         };
     }, [gameState.gameStarted, gameLoop]);
 
-    const playButtonClickSound = () => {
-        buttonClickSoundRef.current.currentTime = 0;
-        buttonClickSoundRef.current.play();
-    };
-
     const startGame = () => {
-        playButtonClickSound();
         setGameState({
             ...gameState,
             gameStarted: true,
@@ -163,7 +143,6 @@ const AppleCatcher = ({ onGameOver }) => {
             gameStarted: false,
             showResult: true
         }));
-        backgroundMusicRef.current.pause();
     };
 
     const movePlayer = useCallback((e) => {
@@ -175,11 +154,7 @@ const AppleCatcher = ({ onGameOver }) => {
     }, [gameState.gameStarted]);
 
     const handleResultClose = () => {
-        playButtonClickSound();
         setGameState(prev => ({ ...prev, showResult: false }));
-        UniverseData.addGameScore('appleCatcher', gameState.score);
-        console.log('Updated AppleCatcher score:', gameState.score);
-        console.log('New total clicks:', UniverseData.getTotalClicks());
         onGameOver(gameState.score);
     };
 
