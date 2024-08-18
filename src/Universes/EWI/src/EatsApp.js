@@ -10,7 +10,6 @@ import clickerImage from '../public/clicker-image.png'
 import SoonTab from './components/SoonTab'
 import UniverseData from './UniverseData';
 
-
 import {
   handleClick,
   handleDamageUpgrade,
@@ -21,40 +20,45 @@ import {
 } from './scripts/functions';
 
 function EatsApp({ setIsTabOpen }) {
+  const currentUniverse = UniverseData.getCurrentUniverse();
+
   const [totalClicks, setTotalClicks] = useState(UniverseData.getTotalClicks());
   const [count, setCount] = useState(0);
   const [activeTab, setActiveTab] = useState(null);
   const [isImageDistorted, setIsImageDistorted] = useState(false);
-  const [pointsPerClick, setPointsPerClick] = useState(1);
   const [isClicking, setIsClicking] = useState(false);
   const [isTabOpenState, setIsTabOpenState] = useState(false);
   const [showButtons, setShowButtons] = useState(true);
 
   const [energy, setEnergy] = useState(() => {
-    const saved = localStorage.getItem('energy');
-    return saved !== null ? JSON.parse(saved) : 1000;
-  });
-  const [energyMax, setEnergyMax] = useState(() => {
-    const saved = localStorage.getItem('energyMax');
-    return saved !== null ? JSON.parse(saved) : 1000;
-  });
-  const [regenRate, setRegenRate] = useState(() => {
-    const saved = localStorage.getItem('regenRate');
-    return saved !== null ? JSON.parse(saved) : 1;
+    const savedEnergy = UniverseData.getUniverseData(currentUniverse, 'energy', 1000);
+    const lastUpdate = UniverseData.getUniverseData(currentUniverse, 'lastUpdate', Date.now());
+    const energyMax = UniverseData.getUniverseData(currentUniverse, 'energyMax', 1000);
+    const regenRate = UniverseData.getUniverseData(currentUniverse, 'regenRate', 1);
+
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - lastUpdate) / 1000);
+    const regenAmount = Math.min(elapsedSeconds * regenRate, energyMax - savedEnergy);
+    
+    return Math.min(savedEnergy + regenAmount, energyMax);
   });
 
-  const [damageLevel, setDamageLevel] = useState(() => {
-    const saved = localStorage.getItem('damageLevel');
-    return saved !== null ? JSON.parse(saved) : 1;
-  });
-  const [energyLevel, setEnergyLevel] = useState(() => {
-    const saved = localStorage.getItem('energyLevel');
-    return saved !== null ? JSON.parse(saved) : 1;
-  });
-  const [regenLevel, setRegenLevel] = useState(() => {
-    const saved = localStorage.getItem('regenLevel');
-    return saved !== null ? JSON.parse(saved) : 1;
-  });
+  const [energyMax, setEnergyMax] = useState(() => 
+    UniverseData.getUniverseData(currentUniverse, 'energyMax', 1000)
+  );
+  const [regenRate, setRegenRate] = useState(() => 
+    UniverseData.getUniverseData(currentUniverse, 'regenRate', 1)
+  );
+
+  const [damageLevel, setDamageLevel] = useState(() => 
+    UniverseData.getUniverseData(currentUniverse, 'damageLevel', 1)
+  );
+  const [energyLevel, setEnergyLevel] = useState(() => 
+    UniverseData.getUniverseData(currentUniverse, 'energyLevel', 1)
+  );
+  const [regenLevel, setRegenLevel] = useState(() => 
+    UniverseData.getUniverseData(currentUniverse, 'regenLevel', 1)
+  );
 
   const damageUpgradeCost = 1000 * Math.pow(2, damageLevel - 1);
   const energyUpgradeCost = 1000 * Math.pow(2, energyLevel - 1);
@@ -63,55 +67,48 @@ function EatsApp({ setIsTabOpen }) {
   const activityTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const updateInterval = setInterval(() => {
-      setTotalClicks(UniverseData.getTotalClicks());
+    UniverseData.setUniverseData(currentUniverse, 'energy', energy);
+  }, [energy, currentUniverse]);
+
+  useEffect(() => {
+    UniverseData.setUniverseData(currentUniverse, 'energyMax', energyMax);
+  }, [energyMax, currentUniverse]);
+
+  useEffect(() => {
+    UniverseData.setUniverseData(currentUniverse, 'regenRate', regenRate);
+  }, [regenRate, currentUniverse]);
+
+  useEffect(() => {
+    UniverseData.setUniverseData(currentUniverse, 'damageLevel', damageLevel);
+  }, [damageLevel, currentUniverse]);
+
+  useEffect(() => {
+    UniverseData.setUniverseData(currentUniverse, 'energyLevel', energyLevel);
+  }, [energyLevel, currentUniverse]);
+
+  useEffect(() => {
+    UniverseData.setUniverseData(currentUniverse, 'regenLevel', regenLevel);
+  }, [regenLevel, currentUniverse]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEnergy(prevEnergy => {
+        if (prevEnergy < energyMax) {
+          const newEnergy = Math.min(prevEnergy + regenRate, energyMax);
+          UniverseData.setUniverseData(currentUniverse, 'energy', newEnergy);
+          UniverseData.setUniverseData(currentUniverse, 'lastUpdate', Date.now());
+          return newEnergy;
+        }
+        return prevEnergy;
+      });
     }, 1000);
 
-    return () => clearInterval(updateInterval);
-  }, []);
-
-  useEffect(() => {
-    const lastUpdate = localStorage.getItem('lastUpdate');
-    if (lastUpdate) {
-      const elapsedSeconds = Math.floor((Date.now() - new Date(lastUpdate)) / 1000);
-      const regenAmount = Math.min(elapsedSeconds * regenRate, energyMax - energy);
-      setEnergy((prevEnergy) => Math.min(prevEnergy + regenAmount, energyMax));
-    }
-  }, [regenRate, energyMax, energy]);
-
-  useEffect(() => {
-    const regenInterval = setInterval(() => {
-      if (!isClicking && regenRate > 0 && energy < energyMax) {
-        setEnergy((prevEnergy) => Math.min(prevEnergy + regenRate, energyMax));
-        localStorage.setItem('lastUpdate', new Date().toISOString());
-      }
-    }, 1000);
-    return () => clearInterval(regenInterval);
-  }, [isClicking, regenRate, energy, energyMax]);
-
-  useEffect(() => {
-    localStorage.setItem('energy', JSON.stringify(energy));
-  }, [energy]);
-
-  useEffect(() => {
-    localStorage.setItem('energyMax', JSON.stringify(energyMax));
-  }, [energyMax]);
-
-  useEffect(() => {
-    localStorage.setItem('regenRate', JSON.stringify(regenRate));
-  }, [regenRate]);
-
-  useEffect(() => {
-    localStorage.setItem('damageLevel', JSON.stringify(damageLevel));
-  }, [damageLevel]);
-
-  useEffect(() => {
-    localStorage.setItem('energyLevel', JSON.stringify(energyLevel));
-  }, [energyLevel]);
-
-  useEffect(() => {
-    localStorage.setItem('regenLevel', JSON.stringify(regenLevel));
-  }, [regenLevel]);
+    return () => {
+      clearInterval(interval);
+      UniverseData.setUniverseData(currentUniverse, 'energy', energy);
+      UniverseData.setUniverseData(currentUniverse, 'lastUpdate', Date.now());
+    };
+  }, [currentUniverse, energy, energyMax, regenRate]);
 
   const handleTabOpen = (tab) => {
     setActiveTab(tab);
@@ -128,8 +125,11 @@ function EatsApp({ setIsTabOpen }) {
   };
 
   const updateTotalClicks = (additionalClicks) => {
-    UniverseData.setTotalClicks(UniverseData.getTotalClicks() + additionalClicks);
-    setTotalClicks(UniverseData.getTotalClicks());
+    setTotalClicks(prevTotal => {
+      const newTotal = prevTotal + additionalClicks;
+      UniverseData.setTotalClicks(newTotal);
+      return newTotal;
+    });
   };
 
   const tabContent = (() => {
@@ -144,7 +144,7 @@ function EatsApp({ setIsTabOpen }) {
             damageLevel={damageLevel}
             energyLevel={energyLevel}
             regenLevel={regenLevel}
-            handleDamageUpgrade={() => handleDamageUpgrade(totalClicks, damageUpgradeCost, updateTotalClicks, setPointsPerClick, setDamageLevel, pointsPerClick, damageLevel)}
+            handleDamageUpgrade={() => handleDamageUpgrade(totalClicks, damageUpgradeCost, updateTotalClicks, setDamageLevel, damageLevel)}
             handleEnergyUpgrade={() => handleEnergyUpgrade(totalClicks, energyUpgradeCost, updateTotalClicks, setEnergyMax, setEnergyLevel, energyMax, energyLevel)}
             handleRegenUpgrade={() => handleRegenUpgrade(totalClicks, regenUpgradeCost, updateTotalClicks, setRegenRate, setRegenLevel, regenRate, regenLevel)}
           />
@@ -182,9 +182,9 @@ function EatsApp({ setIsTabOpen }) {
           <p>{totalClicks}</p>
         </div>
         <div className="energy-container">
-          <p>Energy: {energy}/{energyMax}</p>
+          <p>Energy: {Math.floor(energy)}/{energyMax}</p>
         </div>
-        <div className="clicker-container" onClick={() => handleClick(energy, damageLevel, count, totalClicks, pointsPerClick, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate)}>
+        <div className="clicker-container" onClick={() => handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate)}>
             <img src={clickerImage} alt="Clicker" className={`clicker-image ${isImageDistorted ? 'distorted' : ''}`} />
           <div className="progress-circle" style={{ boxShadow: '0px 0px 10px 5px gray' }}>
             <CircularProgressbar

@@ -4,6 +4,8 @@ const UniverseData = {
     appleCatcher: 0,
     purblePairs: 0
   },
+  universes: {},
+  currentUniverse: 'default',
 
   getTotalClicks() {
     return this.totalClicks;
@@ -16,9 +18,7 @@ const UniverseData = {
 
   addGameScore(gameType, score) {
     if (gameType in this.gameScores) {
-      // Обновляем счёт игры, добавляя новые очки
       this.gameScores[gameType] = score;
-      // Добавляем или вычитаем из общего счёта в зависимости от набранных очков
       this.totalClicks += score;
       this.saveToLocalStorage();
       console.log(`Updated ${gameType} score:`, this.gameScores[gameType]);
@@ -28,10 +28,36 @@ const UniverseData = {
     }
   },
 
+  setUniverseData(universeName, key, value) {
+    if (!this.universes[universeName]) {
+      this.universes[universeName] = {};
+    }
+    this.universes[universeName][key] = value;
+    this.saveToLocalStorage();
+  },
+
+  getUniverseData(universeName, key, defaultValue) {
+    if (this.universes[universeName] && this.universes[universeName][key] !== undefined) {
+      return this.universes[universeName][key];
+    }
+    return defaultValue;
+  },
+
+  setCurrentUniverse(universeName) {
+    this.currentUniverse = universeName;
+    this.saveToLocalStorage();
+  },
+
+  getCurrentUniverse() {
+    return this.currentUniverse;
+  },
+
   saveToLocalStorage() {
     localStorage.setItem('universeData', JSON.stringify({
       totalClicks: this.totalClicks,
-      gameScores: this.gameScores
+      gameScores: this.gameScores,
+      universes: this.universes,
+      currentUniverse: this.currentUniverse
     }));
   },
 
@@ -44,6 +70,8 @@ const UniverseData = {
         appleCatcher: 0,
         purblePairs: 0
       };
+      this.universes = parsedData.universes || {};
+      this.currentUniverse = parsedData.currentUniverse || 'default';
     }
   },
 
