@@ -14,9 +14,7 @@ import {
   handleClick,
   handleDamageUpgrade,
   handleEnergyUpgrade,
-  handleRegenUpgrade,
-  handleMouseDown,
-  handleMouseUp
+  handleRegenUpgrade
 } from './scripts/functions';
 
 const DamageIndicator = ({ x, y, damage }) => (
@@ -32,10 +30,8 @@ function EatsApp({ setIsTabOpen }) {
   const [count, setCount] = useState(0);
   const [activeTab, setActiveTab] = useState(null);
   const [isImageDistorted, setIsImageDistorted] = useState(false);
-  const [isClicking, setIsClicking] = useState(false);
   const [isTabOpenState, setIsTabOpenState] = useState(false);
   const [showButtons, setShowButtons] = useState(true);
-  const [activeTouches, setActiveTouches] = useState(0);
   const [damageIndicators, setDamageIndicators] = useState([]);
 
   const [energy, setEnergy] = useState(() => {
@@ -145,18 +141,6 @@ function EatsApp({ setIsTabOpen }) {
     };
   }, [currentUniverse, energy, energyMax, regenRate]);
 
-  useEffect(() => {
-    if (isClicking && activeTouches > 0) {
-      const clickInterval = setInterval(() => {
-        for (let i = 0; i < activeTouches; i++) {
-          handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate);
-        }
-      }, 50);  // Adjust this interval as needed for balance
-
-      return () => clearInterval(clickInterval);
-    }
-  }, [isClicking, activeTouches, energy, damageLevel, count, totalClicks]);
-
   const handleTabOpen = (tab) => {
     setActiveTab(tab);
     setIsTabOpenState(true);
@@ -179,70 +163,50 @@ function EatsApp({ setIsTabOpen }) {
     });
   };
 
-  const handleTouchStart = useCallback((e) => {
+  const handleInteraction = useCallback((e) => {
     e.preventDefault();
-    setActiveTouches(e.touches.length);
-    setIsClicking(true);
     setIsImageDistorted(true);
 
-    const rect = e.target.getBoundingClientRect();
-    const newIndicators = Array.from(e.touches).map(touch => ({
-      id: Date.now() + Math.random(),
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top,
-      damage: damageLevel
-    }));
+    const rect = clickerRef.current.getBoundingClientRect();
+    const x = e.clientX || (e.touches && e.touches[0].clientX);
+    const y = e.clientY || (e.touches && e.touches[0].clientY);
 
-    setDamageIndicators(prev => [...prev, ...newIndicators]);
+    const newIndicator = {
+      id: Date.now() + Math.random(),
+      x: x - rect.left,
+      y: y - rect.top,
+      damage: damageLevel
+    };
+
+    setDamageIndicators(prev => [...prev, newIndicator]);
 
     setTimeout(() => {
-      setDamageIndicators(prev => prev.filter(indicator => !newIndicators.includes(indicator)));
+      setDamageIndicators(prev => prev.filter(indicator => indicator.id !== newIndicator.id));
     }, 1000);
 
-    for (let i = 0; i < e.touches.length; i++) {
-      handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate);
-    }
-  }, [damageLevel, energy, count, totalClicks]);
+    handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate);
 
-  const handleTouchEnd = useCallback((e) => {
-    e.preventDefault();
-    const touchesLeft = e.touches.length;
-    setActiveTouches(touchesLeft);
+    if (activityTimeoutRef.current) {
+      clearTimeout(activityTimeoutRef.current);
+    }
     
-    if (touchesLeft === 0) {
-      setIsClicking(false);
+    activityTimeoutRef.current = setTimeout(() => {
       setIsImageDistorted(false);
-      
-      if (activityTimeoutRef.current) {
-        clearTimeout(activityTimeoutRef.current);
-      }
-      
-      activityTimeoutRef.current = setTimeout(() => {
-        setIsImageDistorted(false);
-      }, 200);
-    }
-  }, []);
-
-  const handleTouchMove = useCallback((e) => {
-    e.preventDefault();
-  }, []);
+    }, 200);
+  }, [damageLevel, energy, count, totalClicks]);
 
   useEffect(() => {
     const clicker = clickerRef.current;
     if (clicker) {
-      clicker.addEventListener('touchstart', handleTouchStart, { passive: false });
-      clicker.addEventListener('touchend', handleTouchEnd, { passive: false });
-      clicker.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-      clicker.addEventListener('touchmove', handleTouchMove, { passive: false });
+      clicker.addEventListener('click', handleInteraction);
+      clicker.addEventListener('touchstart', handleInteraction, { passive: false });
       
       return () => {
-        clicker.removeEventListener('touchstart', handleTouchStart);
-        clicker.removeEventListener('touchend', handleTouchEnd);
-        clicker.removeEventListener('touchcancel', handleTouchEnd);
-        clicker.removeEventListener('touchmove', handleTouchMove);
+        clicker.removeEventListener('click', handleInteraction);
+        clicker.removeEventListener('touchstart', handleInteraction);
       };
     }
-  }, [handleTouchStart, handleTouchEnd, handleTouchMove]);
+  }, [handleInteraction]);
 
   const tabContent = (() => {
     switch (activeTab) {
@@ -275,9 +239,7 @@ function EatsApp({ setIsTabOpen }) {
   const remainingEnergyPercentage = ((energyMax - energy) / energyMax) * 100;
 
   return (
-    <div className={`App`}
-         onMouseDown={() => handleMouseDown(setIsClicking)}
-         onMouseUp={() => handleMouseUp(setIsClicking, activityTimeoutRef, setIsImageDistorted, isClicking)}>
+    <div className={`App`}>
       <header className="App-header">
        <div className='bg'>
        <div className="abg-wr-4">
@@ -299,8 +261,7 @@ function EatsApp({ setIsTabOpen }) {
           <p>Energy: {Math.floor(energy)}/{energyMax}</p>
         </div>
         <div className="clicker-container"
-             ref={clickerRef}
-             onClick={() => handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate)}>
+             ref={clickerRef}>
           <img src={clickerImage} alt="Clicker" className={`clicker-image ${isImageDistorted ? 'distorted' : ''}`} />
           <div className="progress-circle" style={{ boxShadow: '0px 0px 10px 5px gray' }}>
             <CircularProgressbar
