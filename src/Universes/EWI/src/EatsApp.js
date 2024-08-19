@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './EatsApp.css';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
@@ -19,6 +19,12 @@ import {
   handleMouseUp
 } from './scripts/functions';
 
+const DamageIndicator = ({ x, y, damage }) => (
+  <div className="damage-indicator" style={{ left: x, top: y }}>
+    {damage}
+  </div>
+);
+
 function EatsApp({ setIsTabOpen }) {
   const currentUniverse = UniverseData.getCurrentUniverse();
 
@@ -29,6 +35,8 @@ function EatsApp({ setIsTabOpen }) {
   const [isClicking, setIsClicking] = useState(false);
   const [isTabOpenState, setIsTabOpenState] = useState(false);
   const [showButtons, setShowButtons] = useState(true);
+  const [activeTouches, setActiveTouches] = useState(0);
+  const [damageIndicators, setDamageIndicators] = useState([]);
 
   const [energy, setEnergy] = useState(() => {
     const savedEnergy = UniverseData.getUniverseData(currentUniverse, 'energy', 1000);
@@ -65,6 +73,33 @@ function EatsApp({ setIsTabOpen }) {
   const regenUpgradeCost = 50000 * Math.pow(2, regenLevel - 1);
 
   const activityTimeoutRef = useRef(null);
+  const clickerRef = useRef(null);
+
+  useEffect(() => {
+    const updateTotalClicks = (newTotal) => {
+      setTotalClicks(newTotal);
+    };
+
+    UniverseData.addListener(updateTotalClicks);
+
+    return () => {
+      UniverseData.removeListener(updateTotalClicks);
+    };
+  }, []);
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('universeData');
+    if (!savedData) {
+      UniverseData.resetToDefaults();
+      setTotalClicks(100000);
+      setEnergy(1000);
+      setEnergyMax(1000);
+      setRegenRate(1);
+      setDamageLevel(1);
+      setEnergyLevel(1);
+      setRegenLevel(1);
+    }
+  }, []);
 
   useEffect(() => {
     UniverseData.setUniverseData(currentUniverse, 'energy', energy);
@@ -110,6 +145,18 @@ function EatsApp({ setIsTabOpen }) {
     };
   }, [currentUniverse, energy, energyMax, regenRate]);
 
+  useEffect(() => {
+    if (isClicking && activeTouches > 0) {
+      const clickInterval = setInterval(() => {
+        for (let i = 0; i < activeTouches; i++) {
+          handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate);
+        }
+      }, 50);  // Adjust this interval as needed for balance
+
+      return () => clearInterval(clickInterval);
+    }
+  }, [isClicking, activeTouches, energy, damageLevel, count, totalClicks]);
+
   const handleTabOpen = (tab) => {
     setActiveTab(tab);
     setIsTabOpenState(true);
@@ -131,6 +178,71 @@ function EatsApp({ setIsTabOpen }) {
       return newTotal;
     });
   };
+
+  const handleTouchStart = useCallback((e) => {
+    e.preventDefault();
+    setActiveTouches(e.touches.length);
+    setIsClicking(true);
+    setIsImageDistorted(true);
+
+    const rect = e.target.getBoundingClientRect();
+    const newIndicators = Array.from(e.touches).map(touch => ({
+      id: Date.now() + Math.random(),
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top,
+      damage: damageLevel
+    }));
+
+    setDamageIndicators(prev => [...prev, ...newIndicators]);
+
+    setTimeout(() => {
+      setDamageIndicators(prev => prev.filter(indicator => !newIndicators.includes(indicator)));
+    }, 1000);
+
+    for (let i = 0; i < e.touches.length; i++) {
+      handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate);
+    }
+  }, [damageLevel, energy, count, totalClicks]);
+
+  const handleTouchEnd = useCallback((e) => {
+    e.preventDefault();
+    const touchesLeft = e.touches.length;
+    setActiveTouches(touchesLeft);
+    
+    if (touchesLeft === 0) {
+      setIsClicking(false);
+      setIsImageDistorted(false);
+      
+      if (activityTimeoutRef.current) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+      
+      activityTimeoutRef.current = setTimeout(() => {
+        setIsImageDistorted(false);
+      }, 200);
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  useEffect(() => {
+    const clicker = clickerRef.current;
+    if (clicker) {
+      clicker.addEventListener('touchstart', handleTouchStart, { passive: false });
+      clicker.addEventListener('touchend', handleTouchEnd, { passive: false });
+      clicker.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+      clicker.addEventListener('touchmove', handleTouchMove, { passive: false });
+      
+      return () => {
+        clicker.removeEventListener('touchstart', handleTouchStart);
+        clicker.removeEventListener('touchend', handleTouchEnd);
+        clicker.removeEventListener('touchcancel', handleTouchEnd);
+        clicker.removeEventListener('touchmove', handleTouchMove);
+      };
+    }
+  }, [handleTouchStart, handleTouchEnd, handleTouchMove]);
 
   const tabContent = (() => {
     switch (activeTab) {
@@ -163,7 +275,9 @@ function EatsApp({ setIsTabOpen }) {
   const remainingEnergyPercentage = ((energyMax - energy) / energyMax) * 100;
 
   return (
-    <div className={`App`} onMouseDown={() => handleMouseDown(setIsClicking)} onMouseUp={() => handleMouseUp(setIsClicking, activityTimeoutRef, setIsImageDistorted, isClicking)}>
+    <div className={`App`}
+         onMouseDown={() => handleMouseDown(setIsClicking)}
+         onMouseUp={() => handleMouseUp(setIsClicking, activityTimeoutRef, setIsImageDistorted, isClicking)}>
       <header className="App-header">
        <div className='bg'>
        <div className="abg-wr-4">
@@ -184,8 +298,10 @@ function EatsApp({ setIsTabOpen }) {
         <div className="energy-container">
           <p>Energy: {Math.floor(energy)}/{energyMax}</p>
         </div>
-        <div className="clicker-container" onClick={() => handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate)}>
-            <img src={clickerImage} alt="Clicker" className={`clicker-image ${isImageDistorted ? 'distorted' : ''}`} />
+        <div className="clicker-container"
+             ref={clickerRef}
+             onClick={() => handleClick(energy, damageLevel, count, totalClicks, setCount, updateTotalClicks, setEnergy, setIsImageDistorted, activityTimeoutRef, setRegenRate)}>
+          <img src={clickerImage} alt="Clicker" className={`clicker-image ${isImageDistorted ? 'distorted' : ''}`} />
           <div className="progress-circle" style={{ boxShadow: '0px 0px 10px 5px gray' }}>
             <CircularProgressbar
               value={remainingEnergyPercentage}
@@ -194,10 +310,13 @@ function EatsApp({ setIsTabOpen }) {
                 pathColor: 'rgba(188, 1, 1)',
                 textColor: '#fff',
                 trailColor: 'greenyellow',
-                backgroundColor: '#3e98c7',
+                backgroundColor: '#3c98c7',
               })}
             />
           </div>
+          {damageIndicators.map(indicator => (
+            <DamageIndicator key={indicator.id} x={indicator.x} y={indicator.y} damage={indicator.damage} />
+          ))}
         </div>
         {showButtons && (
           <div className="tabs">

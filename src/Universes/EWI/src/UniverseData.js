@@ -11,9 +11,24 @@ const UniverseData = {
     return this.totalClicks;
   },
 
+  listeners: [],
+
+  addListener(callback) {
+    this.listeners.push(callback);
+  },
+
+  removeListener(callback) {
+    this.listeners = this.listeners.filter(listener => listener !== callback);
+  },
+
+  notifyListeners() {
+    this.listeners.forEach(listener => listener(this.totalClicks));
+  },
+
   setTotalClicks(newTotal) {
     this.totalClicks = newTotal;
     this.saveToLocalStorage();
+    this.notifyListeners();
   },
 
   addGameScore(gameType, score) {
@@ -21,6 +36,7 @@ const UniverseData = {
       this.gameScores[gameType] = score;
       this.totalClicks += score;
       this.saveToLocalStorage();
+      this.notifyListeners();
       console.log(`Updated ${gameType} score:`, this.gameScores[gameType]);
       console.log('New total clicks:', this.totalClicks);
     } else {
@@ -72,7 +88,20 @@ const UniverseData = {
       };
       this.universes = parsedData.universes || {};
       this.currentUniverse = parsedData.currentUniverse || 'default';
+    } else {
+      this.resetToDefaults();
     }
+  },
+
+  resetToDefaults() {
+    this.totalClicks = 100000;
+    this.gameScores = {
+      appleCatcher: 0,
+      purblePairs: 0
+    };
+    this.universes = {};
+    this.currentUniverse = 'default';
+    this.saveToLocalStorage();
   },
 
   init() {
