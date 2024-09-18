@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Score from './comp/Score';
-import './css/EWE.css'
+import './css/EWE.css';
 import FarmButton from './comp/FarmButton';
 
 function Ewe() {
@@ -29,12 +29,15 @@ function Ewe() {
     return savedElapsedFarmingTime ? parseFloat(savedElapsedFarmingTime) : 0;
   });
 
+  const [animationClass, setAnimationClass] = useState('');
+
+  const maxTokens = 32;
+  const farmingDuration = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+
   useEffect(() => {
     let farmingInterval;
     if (isFarming) {
-      const maxTokens = 32;
-      const duration = 3 * 60 * 60 * 1000;
-      const interval = duration / (maxTokens * 1000);
+      const interval = 1000; // Update every second
 
       farmingInterval = setInterval(() => {
         const now = new Date();
@@ -63,10 +66,14 @@ function Ewe() {
 
   const handleButtonClick = () => {
     if (isFarming) {
+      // Do nothing if farming is in progress
+    } else if (farmedTokens >= maxTokens) {
       collectTokens();
     } else {
       startFarming();
     }
+    // Trigger animation
+    setAnimationClass('animate');
   };
 
   const startFarming = () => {
@@ -74,17 +81,21 @@ function Ewe() {
       const now = new Date();
       setStartTime(now);
       setIsFarming(true);
-      setElapsedFarmingTime(farmedTokens / 0.001); 
+      setElapsedFarmingTime(0);
       setFarmedTokens(0);
     }
   };
 
   const collectTokens = () => {
-    if (farmedTokens >= 32) {
+    if (farmedTokens >= maxTokens) {
       setTokens(prevTokens => Number((prevTokens + farmedTokens).toFixed(3)));
       setFarmedTokens(0);
+      setIsFarming(false);
+      setElapsedFarmingTime(0);
     }
   };
+
+  const progressPercentage = (farmedTokens / maxTokens) * 100;
 
   return (
     <div className="App">
@@ -92,11 +103,27 @@ function Ewe() {
         <Score tokens={tokens} />
       </header>
       <div className="content">
+        <div className="progress-bar">
+          <div 
+            className="progress-bar-fill" 
+            style={{ width: `${progressPercentage}%` }}
+          >
+            <span className="progress-text">{progressPercentage.toFixed(1)}%</span>
+          </div>
+        </div>
         <FarmButton
           isFarming={isFarming}
           farmedTokens={farmedTokens}
           onClick={handleButtonClick}
         />
+      </div>
+      <div className={`animation_contain ${animationClass}`}>
+        <div className='anim_blocks'></div>
+        <div className='anim_blocks'></div>
+        <div className='anim_blocks'></div>
+        <div className='anim_blocks'></div>
+        <div className='anim_blocks'></div>
+        <div className='anim_blocks'></div>
       </div>
     </div>
   );

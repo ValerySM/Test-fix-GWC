@@ -6,6 +6,15 @@ const UniverseData = {
   },
   universes: {},
   currentUniverse: 'default',
+  
+  // Добавляем объект для хранения данных EWE
+  eweData: {
+    tokens: 0,
+    farmedTokens: 0,
+    isFarming: false,
+    startTime: null,
+    elapsedFarmingTime: 0
+  },
 
   getTotalClicks() {
     return this.totalClicks;
@@ -68,12 +77,23 @@ const UniverseData = {
     return this.currentUniverse;
   },
 
+  // Методы для работы с данными EWE
+  setEWEData(key, value) {
+    this.eweData[key] = value;
+    this.saveToLocalStorage();
+  },
+
+  getEWEData(key) {
+    return this.eweData[key];
+  },
+
   saveToLocalStorage() {
     localStorage.setItem('universeData', JSON.stringify({
       totalClicks: this.totalClicks,
       gameScores: this.gameScores,
       universes: this.universes,
-      currentUniverse: this.currentUniverse
+      currentUniverse: this.currentUniverse,
+      eweData: this.eweData
     }));
   },
 
@@ -88,6 +108,13 @@ const UniverseData = {
       };
       this.universes = parsedData.universes || {};
       this.currentUniverse = parsedData.currentUniverse || 'default';
+      this.eweData = parsedData.eweData || {
+        tokens: 0,
+        farmedTokens: 0,
+        isFarming: false,
+        startTime: null,
+        elapsedFarmingTime: 0
+      };
     } else {
       this.resetToDefaults();
     }
@@ -101,6 +128,13 @@ const UniverseData = {
     };
     this.universes = {};
     this.currentUniverse = 'default';
+    this.eweData = {
+      tokens: 0,
+      farmedTokens: 0,
+      isFarming: false,
+      startTime: null,
+      elapsedFarmingTime: 0
+    };
     this.saveToLocalStorage();
   },
 

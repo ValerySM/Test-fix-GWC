@@ -241,17 +241,6 @@ function EatsApp({ setIsTabOpen }) {
   return (
     <div className={`App`}>
       <header className="App-header">
-       <div className='bg'>
-       <div className="abg-wr-4">
-    
-    <ul className="abg-4">
-        <li></li>
-        <li></li>
-        <li></li>
-    </ul>
-</div>
-       </div>
-        
         <SettingsButton isActive={activeTab !== null} /> 
         <div className="balance-container">
           <img src={clickerImage} alt="Balance Icon" className="balance-icon" />
@@ -268,10 +257,10 @@ function EatsApp({ setIsTabOpen }) {
               value={remainingEnergyPercentage}
               maxValue={100}
               styles={buildStyles({
-                pathColor: 'rgba(188, 1, 1)',
+                pathColor: '#b20bff',
                 textColor: '#fff',
-                trailColor: 'greenyellow',
-                backgroundColor: '#3c98c7',
+                trailColor: '#07ffff',
+                backgroundColor: '#07ffff',
               })}
             />
           </div>
