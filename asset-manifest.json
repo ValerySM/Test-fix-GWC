@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/Test-fix-GWC/static/css/main.1b4da7f4.css",
-    "main.js": "/Test-fix-GWC/static/js/main.ede1a297.js",
+    "main.css": "/Test-fix-GWC/static/css/main.e40a1e7c.css",
+    "main.js": "/Test-fix-GWC/static/js/main.abc6a709.js",
     "static/media/pokemonGym.mp3": "/Test-fix-GWC/static/media/pokemonGym.748e7bdbb500902dd8fd.mp3",
     "static/media/rotten-apple.png": "/Test-fix-GWC/static/media/rotten-apple.f265de5cfc413ce5c0f2.png",
     "static/media/good-apple.png": "/Test-fix-GWC/static/media/good-apple.57d8331039502193d492.png",
@@ -21,11 +21,11 @@
     "static/media/card.mp3": "/Test-fix-GWC/static/media/card.5c2332822d661a6af324.mp3",
     "static/media/start.mp3": "/Test-fix-GWC/static/media/start.cf3e5e40242046be6a6f.mp3",
     "index.html": "/Test-fix-GWC/index.html",
-    "main.1b4da7f4.css.map": "/Test-fix-GWC/static/css/main.1b4da7f4.css.map",
-    "main.ede1a297.js.map": "/Test-fix-GWC/static/js/main.ede1a297.js.map"
+    "main.e40a1e7c.css.map": "/Test-fix-GWC/static/css/main.e40a1e7c.css.map",
+    "main.abc6a709.js.map": "/Test-fix-GWC/static/js/main.abc6a709.js.map"
   },
   "entrypoints": [
-    "static/css/main.1b4da7f4.css",
-    "static/js/main.ede1a297.js"
+    "static/css/main.e40a1e7c.css",
+    "static/js/main.abc6a709.js"
   ]
 }
