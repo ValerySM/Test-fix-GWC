@@ -83,7 +83,7 @@ function Ewe() {
     }
   ];
 
-  const maxTokens = 32;
+  const maxTokens = 0.032;
 
   useEffect(() => {
     let farmingInterval;

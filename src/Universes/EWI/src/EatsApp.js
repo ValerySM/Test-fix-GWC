@@ -5,11 +5,11 @@ import 'react-circular-progressbar/dist/styles.css';
 import UpgradeTab from './components/UpgradeTab';
 import BoostTab from './components/BoostTab';
 import TasksTab from './components/TasksTab';
-import SettingsButton from './components/SettingsButton';
+// import SettingsButton from './components/SettingsButton';
 import clickerImage from '../public/clicker-image.png'
 import SoonTab from './components/SoonTab'
 import UniverseData from './UniverseData';
-
+import 'css-doodle';
 import {
   handleClick,
   handleDamageUpgrade,
@@ -228,6 +228,7 @@ function EatsApp({ setIsTabOpen }) {
       case 'BOOST':
         return <BoostTab updateTotalClicks={updateTotalClicks} />;
       case 'TASKS':
+     
         return <TasksTab />;
       case 'SOON':
         return <SoonTab />;
@@ -239,9 +240,12 @@ function EatsApp({ setIsTabOpen }) {
   const remainingEnergyPercentage = ((energyMax - energy) / energyMax) * 100;
 
   return (
-    <div className={`App`}>
+
+
+    <div className={`App `}>
+      
       <header className="App-header">
-        <SettingsButton isActive={activeTab !== null} /> 
+        {/* <SettingsButton isActive={activeTab !== null} />  */}
         <div className="balance-container">
           <img src={clickerImage} alt="Balance Icon" className="balance-icon" />
           <p>{totalClicks}</p>
@@ -276,9 +280,9 @@ function EatsApp({ setIsTabOpen }) {
             <button className={activeTab === 'BOOST' ? 'active' : ''} onClick={() => handleTabOpen('BOOST')}>
               GAMES
             </button>
-            <button className={activeTab === 'TASKS' ? 'active' : ''} onClick={() => handleTabOpen('TASKS')}>
+            {/* <button className={activeTab === 'TASKS' ? 'active' : ''} onClick={() => handleTabOpen('TASKS')}>
               TASKS
-            </button>
+            </button> */}
             <button className={activeTab === 'SOON' ? 'active' : ''} onClick={() => handleTabOpen('SOON')}>
               REF
             </button>
